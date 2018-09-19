@@ -420,8 +420,12 @@ public class KubernetesCloud extends Cloud {
      * @return Kubernetes client.
      */
     @SuppressFBWarnings({ "IS2_INCONSISTENT_SYNC", "DC_DOUBLECHECK" })
-    public KubernetesClient connect() throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
+    public KubernetesClient connect(String credentialsId) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
             IOException, CertificateEncodingException {
+
+        if (credentialsId == null) {
+            credentialsId = this.credentialsId;
+        }
 
         LOGGER.log(Level.FINE, "Building connection to Kubernetes {0} URL {1} namespace {2}",
                 new String[] { getDisplayName(), serverUrl, namespace });
@@ -429,6 +433,12 @@ public class KubernetesCloud extends Cloud {
                 connectTimeout, readTimeout, maxRequestsPerHost).createClient();
         LOGGER.log(Level.FINE, "Connected to Kubernetes {0} URL {1}", new String[] { getDisplayName(), serverUrl });
         return client;
+    }
+
+    @SuppressFBWarnings({ "IS2_INCONSISTENT_SYNC", "DC_DOUBLECHECK" })
+    public KubernetesClient connect() throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
+            IOException, CertificateEncodingException {
+        return connect(this.credentialsId);
     }
 
     @Override
@@ -483,7 +493,8 @@ public class KubernetesCloud extends Cloud {
             return true;
         }
 
-        KubernetesClient client = connect();
+        String templateCredentialsId = template.getCredentialsId();
+        KubernetesClient client = connect(templateCredentialsId);
         String templateNamespace = template.getNamespace();
         // If template's namespace is not defined, take the
         // Kubernetes Namespace.

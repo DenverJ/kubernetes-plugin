@@ -71,6 +71,7 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
 
         PodTemplateAction podTemplateAction = run.getAction(PodTemplateAction.class);
         NamespaceAction namespaceAction = run.getAction(NamespaceAction.class);
+        CredentialsIdAction credentialsIdAction = run.getAction(CredentialsIdAction.class);
         String parentTemplates = podTemplateAction != null ? podTemplateAction.getParentTemplates() : null;
 
         //Let's generate a random name based on the user specified to make sure that we don't have
@@ -78,10 +79,12 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
         String randString = RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
         String name = String.format(NAME_FORMAT, step.getName(), randString);
         String namespace = checkNamespace(kubernetesCloud, namespaceAction);
+        String credentialsId = checkCredentialsId(kubernetesCloud, credentialsIdAction);
 
         newTemplate = new PodTemplate();
         newTemplate.setName(name);
         newTemplate.setNamespace(namespace);
+        newTemplate.setCredentialsId(credentialsId);
         newTemplate.setInheritFrom(!Strings.isNullOrEmpty(parentTemplates) ? parentTemplates : step.getInheritFrom());
         newTemplate.setInstanceCap(step.getInstanceCap());
         newTemplate.setIdleMinutes(step.getIdleMinutes());
@@ -162,6 +165,19 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
             namespace = kubernetesCloud.getNamespace();
         }
         return namespace;
+    }
+
+    private String checkCredentialsId(KubernetesCloud kubernetesCloud,
+                                      @CheckForNull CredentialsIdAction credentialsIdAction) {
+        String credentialsId = null;
+        if (!Strings.isNullOrEmpty(step.getCredentialsId())) {
+            credentialsId = step.getCredentialsId();
+        } else if ((credentialsIdAction != null) && (!Strings.isNullOrEmpty(credentialsIdAction.getCredentialsId()))) {
+            credentialsId = credentialsIdAction.getCredentialsId();
+        } else {
+            credentialsId = kubernetesCloud.getCredentialsId();
+        }
+        return credentialsId;
     }
 
     /**

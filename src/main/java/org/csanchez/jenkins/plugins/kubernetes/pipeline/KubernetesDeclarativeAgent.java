@@ -28,6 +28,8 @@ public class KubernetesDeclarativeAgent extends DeclarativeAgent<KubernetesDecla
     private String label;
 
     private String cloud;
+    private String namespace;
+    private String credentialsId;
     private String inheritFrom;
 
     private int idleMinutes;
@@ -70,6 +72,16 @@ public class KubernetesDeclarativeAgent extends DeclarativeAgent<KubernetesDecla
     public void setCloud(String cloud) {
         this.cloud = cloud;
     }
+
+    public String getNamespace() { return namespace; }
+
+    @DataBoundSetter
+    public void setNamespace(String namespace) { this.namespace = namespace; }
+
+    public String getCredentialsId() { return credentialsId; }
+
+    @DataBoundSetter
+    public void setCredentialsId(String credentialsId) { this.credentialsId = credentialsId; }
 
     public int getIdleMinutes() {
         return idleMinutes;
@@ -201,6 +213,12 @@ public class KubernetesDeclarativeAgent extends DeclarativeAgent<KubernetesDecla
         }
         argMap.put("containers", containerTemplates);
 
+        if (!StringUtils.isEmpty(namespace)) {
+            argMap.put("namespace", namespace);
+        }
+        if (!StringUtils.isEmpty(credentialsId)) {
+            argMap.put("credentialsId", credentialsId);
+        }
         if (!StringUtils.isEmpty(yaml)) {
             argMap.put("yaml", yaml);
         }

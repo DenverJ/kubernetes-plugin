@@ -65,6 +65,8 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private String namespace;
 
+    private String credentialsId;
+
     private String image;
 
     private boolean privileged;
@@ -135,6 +137,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
         this.setLabel(from.getLabel());
         this.setName(from.getName());
         this.setNamespace(from.getNamespace());
+        this.setCredentialsId(from.getCredentialsId());
         this.setInheritFrom(from.getInheritFrom());
         this.setNodeSelector(from.getNodeSelector());
         this.setNodeUsageMode(from.getNodeUsageMode());
@@ -197,6 +200,15 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     @DataBoundSetter
     public void setNamespace(String namespace) {
         this.namespace = namespace;
+    }
+
+    public String getCredentialsId() {
+        return credentialsId;
+    }
+
+    @DataBoundSetter
+    public void setCredentialsId(String credentialsId) {
+        this.credentialsId = credentialsId;
     }
 
     @Deprecated
