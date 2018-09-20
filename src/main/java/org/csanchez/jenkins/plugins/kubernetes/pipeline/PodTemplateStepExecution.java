@@ -2,13 +2,20 @@ package org.csanchez.jenkins.plugins.kubernetes.pipeline;
 
 import static java.util.stream.Collectors.*;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import hudson.security.ACL;
 import org.apache.commons.lang.RandomStringUtils;
 import org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud;
 import org.csanchez.jenkins.plugins.kubernetes.KubernetesFolderProperty;
@@ -80,11 +87,12 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
         String name = String.format(NAME_FORMAT, step.getName(), randString);
         String namespace = checkNamespace(kubernetesCloud, namespaceAction);
         String credentialsId = checkCredentialsId(kubernetesCloud, credentialsIdAction);
+        StandardCredentials credentials = resolveCredentials(kubernetesCloud, credentialsIdAction);
 
         newTemplate = new PodTemplate();
         newTemplate.setName(name);
         newTemplate.setNamespace(namespace);
-        newTemplate.setCredentialsId(credentialsId);
+        newTemplate.setCredentials(credentials);
         newTemplate.setInheritFrom(!Strings.isNullOrEmpty(parentTemplates) ? parentTemplates : step.getInheritFrom());
         newTemplate.setInstanceCap(step.getInstanceCap());
         newTemplate.setIdleMinutes(step.getIdleMinutes());
@@ -127,6 +135,7 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
 
         PodTemplateAction.push(run, name);
         NamespaceAction.push(run, namespace);
+        CredentialsIdAction.push(run, credentialsId);
         return false;
     }
 
@@ -178,6 +187,33 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
             credentialsId = kubernetesCloud.getCredentialsId();
         }
         return credentialsId;
+    }
+
+    private StandardCredentials resolveCredentials(KubernetesCloud kubernetesCloud,
+                                                   @CheckForNull CredentialsIdAction credentialsIdAction) throws IOException, InterruptedException {
+        String credentialsId = null;
+        StandardCredentials credentials = null;
+        if (!Strings.isNullOrEmpty(step.getCredentialsId())) {
+            credentialsId = step.getCredentialsId();
+        } else if ((credentialsIdAction != null) && (!Strings.isNullOrEmpty(credentialsIdAction.getCredentialsId()))) {
+            credentialsId = credentialsIdAction.getCredentialsId();
+        }
+
+        if (credentialsId != null) {
+            Run<?, ?> run = getContext().get(Run.class);
+            credentials = CredentialsProvider.findCredentialById(credentialsId, StandardCredentials.class, run);
+
+            if (credentials == null) {
+                throw new AbortException(String.format("Can not find credentials with the credentialsId: %s", credentialsId));
+            }
+        } else {
+            credentialsId = kubernetesCloud.getCredentialsId();
+            credentials = CredentialsMatchers.firstOrNull(CredentialsProvider.lookupCredentials(StandardCredentials.class,
+                    Jenkins.getInstance(), ACL.SYSTEM, Collections.<DomainRequirement>emptyList()),
+                    CredentialsMatchers.withId(credentialsId)
+            );
+        }
+        return credentials;
     }
 
     /**

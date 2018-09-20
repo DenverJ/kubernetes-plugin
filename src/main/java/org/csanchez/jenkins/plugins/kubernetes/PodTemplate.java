@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
@@ -65,7 +66,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private String namespace;
 
-    private String credentialsId;
+    private StandardCredentials credentials;
 
     private String image;
 
@@ -137,7 +138,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
         this.setLabel(from.getLabel());
         this.setName(from.getName());
         this.setNamespace(from.getNamespace());
-        this.setCredentialsId(from.getCredentialsId());
+        this.setCredentials(from.getCredentials());
         this.setInheritFrom(from.getInheritFrom());
         this.setNodeSelector(from.getNodeSelector());
         this.setNodeUsageMode(from.getNodeUsageMode());
@@ -202,13 +203,13 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
         this.namespace = namespace;
     }
 
-    public String getCredentialsId() {
-        return credentialsId;
+    public StandardCredentials getCredentials() {
+        return credentials;
     }
 
     @DataBoundSetter
-    public void setCredentialsId(String credentialsId) {
-        this.credentialsId = credentialsId;
+    public void setCredentials(StandardCredentials credentials) {
+        this.credentials = credentials;
     }
 
     @Deprecated

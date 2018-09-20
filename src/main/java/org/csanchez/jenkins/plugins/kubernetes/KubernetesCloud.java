@@ -25,6 +25,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.csanchez.jenkins.plugins.kubernetes.pipeline.PodTemplateMap;
@@ -420,16 +421,12 @@ public class KubernetesCloud extends Cloud {
      * @return Kubernetes client.
      */
     @SuppressFBWarnings({ "IS2_INCONSISTENT_SYNC", "DC_DOUBLECHECK" })
-    public KubernetesClient connect(String credentialsId) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
+    public KubernetesClient connect(StandardCredentials credentials) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
             IOException, CertificateEncodingException {
-
-        if (credentialsId == null) {
-            credentialsId = this.credentialsId;
-        }
 
         LOGGER.log(Level.FINE, "Building connection to Kubernetes {0} URL {1} namespace {2}",
                 new String[] { getDisplayName(), serverUrl, namespace });
-        client = new KubernetesFactoryAdapter(serverUrl, namespace, serverCertificate, credentialsId, skipTlsVerify,
+        client = new KubernetesFactoryAdapter(serverUrl, namespace, serverCertificate, credentials, skipTlsVerify,
                 connectTimeout, readTimeout, maxRequestsPerHost).createClient();
         LOGGER.log(Level.FINE, "Connected to Kubernetes {0} URL {1}", new String[] { getDisplayName(), serverUrl });
         return client;
@@ -438,7 +435,16 @@ public class KubernetesCloud extends Cloud {
     @SuppressFBWarnings({ "IS2_INCONSISTENT_SYNC", "DC_DOUBLECHECK" })
     public KubernetesClient connect() throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
             IOException, CertificateEncodingException {
-        return connect(this.credentialsId);
+        StandardCredentials credentials = getCredentials(this.credentialsId);
+        return connect(credentials);
+    }
+
+    private static StandardCredentials getCredentials(String credentials) {
+        return CredentialsMatchers.firstOrNull(
+                CredentialsProvider.lookupCredentials(StandardCredentials.class,
+                        Jenkins.getInstance(), ACL.SYSTEM, Collections.<DomainRequirement>emptyList()),
+                CredentialsMatchers.withId(credentials)
+        );
     }
 
     @Override
@@ -493,8 +499,8 @@ public class KubernetesCloud extends Cloud {
             return true;
         }
 
-        String templateCredentialsId = template.getCredentialsId();
-        KubernetesClient client = connect(templateCredentialsId);
+        StandardCredentials templateCredentials = template.getCredentials();
+        KubernetesClient client = connect(templateCredentials);
         String templateNamespace = template.getNamespace();
         // If template's namespace is not defined, take the
         // Kubernetes Namespace.
@@ -648,8 +654,11 @@ public class KubernetesCloud extends Cloud {
                 return FormValidation.error("name is required");
 
             try {
+
+                StandardCredentials credentials = getCredentials(Util.fixEmpty(credentialsId));
+
                 KubernetesClient client = new KubernetesFactoryAdapter(serverUrl, namespace,
-                        Util.fixEmpty(serverCertificate), Util.fixEmpty(credentialsId), skipTlsVerify,
+                        Util.fixEmpty(serverCertificate), credentials, skipTlsVerify,
                         connectionTimeout, readTimeout).createClient();
 
                 // test listing pods

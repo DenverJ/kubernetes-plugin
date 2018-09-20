@@ -66,38 +66,30 @@ public class KubernetesFactoryAdapter {
     private final int maxRequestsPerHost;
 
     public KubernetesFactoryAdapter(String serviceAddress, @CheckForNull String caCertData,
-                                    @CheckForNull String credentials, boolean skipTlsVerify) {
+                                    @CheckForNull StandardCredentials credentials, boolean skipTlsVerify) {
         this(serviceAddress, null, caCertData, credentials, skipTlsVerify);
     }
 
     public KubernetesFactoryAdapter(String serviceAddress, String namespace, @CheckForNull String caCertData,
-                                    @CheckForNull String credentials, boolean skipTlsVerify) {
+                                    @CheckForNull StandardCredentials credentials, boolean skipTlsVerify) {
         this(serviceAddress, namespace, caCertData, credentials, skipTlsVerify, DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT);
     }
 
     public KubernetesFactoryAdapter(String serviceAddress, String namespace, @CheckForNull String caCertData,
-                                    @CheckForNull String credentials, boolean skipTlsVerify, int connectTimeout, int readTimeout) {
+                                    @CheckForNull StandardCredentials credentials, boolean skipTlsVerify, int connectTimeout, int readTimeout) {
         this(serviceAddress, namespace, caCertData, credentials, skipTlsVerify, connectTimeout, readTimeout, KubernetesCloud.DEFAULT_MAX_REQUESTS_PER_HOST);
     }
 
     public KubernetesFactoryAdapter(String serviceAddress, String namespace, @CheckForNull String caCertData,
-                                    @CheckForNull String credentials, boolean skipTlsVerify, int connectTimeout, int readTimeout, int maxRequestsPerHost) {
+                                    @CheckForNull StandardCredentials credentials, boolean skipTlsVerify, int connectTimeout, int readTimeout, int maxRequestsPerHost) {
         this.serviceAddress = serviceAddress;
         this.namespace = namespace;
         this.caCertData = caCertData;
-        this.credentials = credentials != null ? getCredentials(credentials) : null;
+        this.credentials = credentials;
         this.skipTlsVerify = skipTlsVerify;
         this.connectTimeout = connectTimeout;
         this.readTimeout = readTimeout;
         this.maxRequestsPerHost = maxRequestsPerHost;
-    }
-
-    private StandardCredentials getCredentials(String credentials) {
-        return CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(StandardCredentials.class,
-                        Jenkins.getInstance(), ACL.SYSTEM, Collections.<DomainRequirement>emptyList()),
-                CredentialsMatchers.withId(credentials)
-        );
     }
 
     public KubernetesClient createClient() throws NoSuchAlgorithmException, UnrecoverableKeyException,

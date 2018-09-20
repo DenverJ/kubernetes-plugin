@@ -206,7 +206,7 @@ public class KubernetesSlave extends AbstractCloudSlave {
 
         KubernetesClient client;
         try {
-            client = cloud.connect();
+            client = cloud.connect(template.getCredentials());
         } catch (UnrecoverableKeyException | CertificateEncodingException | NoSuchAlgorithmException
                 | KeyStoreException e) {
             String msg = String.format("Failed to connect to cloud %s. There may be leftover resources on the Kubernetes cluster.", getCloudName());
