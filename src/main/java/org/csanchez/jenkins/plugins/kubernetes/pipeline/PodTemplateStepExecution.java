@@ -86,8 +86,7 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
         String randString = RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
         String name = String.format(NAME_FORMAT, step.getName(), randString);
         String namespace = checkNamespace(kubernetesCloud, namespaceAction);
-        String credentialsId = checkCredentialsId(kubernetesCloud, credentialsIdAction);
-        StandardCredentials credentials = resolveCredentials(kubernetesCloud, credentialsIdAction);
+        StandardCredentials credentials = checkCredentials(kubernetesCloud, credentialsIdAction);
 
         newTemplate = new PodTemplate();
         newTemplate.setName(name);
@@ -135,7 +134,7 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
 
         PodTemplateAction.push(run, name);
         NamespaceAction.push(run, namespace);
-        CredentialsIdAction.push(run, credentialsId);
+        CredentialsIdAction.push(run, credentials != null ? credentials.getId(): null);
         return false;
     }
 
@@ -176,20 +175,7 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
         return namespace;
     }
 
-    private String checkCredentialsId(KubernetesCloud kubernetesCloud,
-                                      @CheckForNull CredentialsIdAction credentialsIdAction) {
-        String credentialsId = null;
-        if (!Strings.isNullOrEmpty(step.getCredentialsId())) {
-            credentialsId = step.getCredentialsId();
-        } else if ((credentialsIdAction != null) && (!Strings.isNullOrEmpty(credentialsIdAction.getCredentialsId()))) {
-            credentialsId = credentialsIdAction.getCredentialsId();
-        } else {
-            credentialsId = kubernetesCloud.getCredentialsId();
-        }
-        return credentialsId;
-    }
-
-    private StandardCredentials resolveCredentials(KubernetesCloud kubernetesCloud,
+    private StandardCredentials checkCredentials(KubernetesCloud kubernetesCloud,
                                                    @CheckForNull CredentialsIdAction credentialsIdAction) throws IOException, InterruptedException {
         String credentialsId = null;
         StandardCredentials credentials = null;
